@@ -357,15 +357,22 @@
 // =============== constants ===============
 const ARENA=(()=>{try{const a=sessionStorage.getItem('sl_arena');return a==='mid'||a==='big'?a:'std';}catch(e){return 'std';}})();
 // ---- version + in-game updates (new versions are published to GitHub; the launcher downloads them) ----
-const GAME_VERSION='1.1.4';
+const GAME_VERSION='1.1.5';
 const UPDATE_BASE='https://raw.githubusercontent.com/v0idhere/sport-league/main/game/';
 const needArena=n=>n>=3?'big':n===2?'mid':'std';
 const HW={std:54,mid:59,big:64}[ARENA], HL={std:82,mid:90,big:98}[ARENA], WH={std:31,mid:32,big:34}[ARENA], GW={std:13.5,mid:14.5,big:15.5}[ARENA], GH=11, GD=12;
 // switching arena size reloads the game, then picks up what the player asked for
 function switchArena(a,pending){try{sessionStorage.setItem('sl_arena',a);sessionStorage.setItem('sl_pending',JSON.stringify(pending));}catch(e){}location.reload();}
 let BALL_R=2.5;const CAR_Y=0.55, CAR_HIT=1.8, CAR_WALL=1.6;
-const G=-32, BALL_G=-24;
-const MAXD=30, MAXB=50, MAXA=48, JUMP=11, DODGE=14, AIR_BOOST=36, CAR_G=-26;
+const G=-13, BALL_G=-13;   // gravity (650 standard units/s^2)
+const MAXD=28.2, MAXB=46, MAXA=46, JUMP=5.83, DODGE=10, AIR_BOOST=19.83, CAR_G=-13;
+// standard car-soccer handling (scaled): throttle curve, braking, coasting, turn-radius curve, air rotation
+const JUMP_HOLD_ACC=29.17, JUMP_HOLD_T=.2, BRAKE=70, COAST=10.5, AIR_THROTTLE=1.33;
+const TURN_CURVE=[[0,.0069],[500,.00398],[1000,.00235],[1500,.001375],[1750,.0011],[2500,.00088]]; // speed (std units) -> 1/radius
+function turnRate(sp){const v=sp*50;let i=0;while(i<TURN_CURVE.length-2&&v>TURN_CURVE[i+1][0])i++;
+  const [v0,c0]=TURN_CURVE[i],[v1,c1]=TURN_CURVE[i+1],t=clamp((v-v0)/(v1-v0),0,1);return v*(c0+(c1-c0)*t);}   // yaw rate (rad/s) = speed * curvature
+function throttleAcc(sp){const a=Math.abs(sp);return a<28?32-28.8*a/28:a<28.2?3.2*(28.2-a)/.2:0;}
+const AIR_T={pitch:12.146,yaw:8.92,roll:36.08},AIR_D={pitch:2.798,yaw:1.886,roll:4.472},AIR_MAXW=5.5;
 const STEP=1/120;
 const TEAM_COL=[0x2f7bff,0xff7a1a];
 const TEAM_CSS=['#2f7bff','#ff7a1a'];
@@ -1383,13 +1390,13 @@ class Car{
     this.isPlayer=humanIdx>=0;this.remote=null;this.owner=null;this.tgt=new V3();this.yawT=0;this.lastJc=null;
     // surface (ramp / wall) driving state: surf = wall index or -1, s = arc distance up the wall, t = along the wall
     this.surf=-1;this.s=0;this.t=0;this.sv=new V3();this.syaw=0;this.jumpHold=0;this.noLand=0;this.roll=0;this.rollRate=0;this.flipP=1;
-    this.q=new THREE.Quaternion();this.prevQ=new THREE.Quaternion();this.qT=new THREE.Quaternion();this.tiltQ=new THREE.Quaternion();
+    this.airQ=new THREE.Quaternion();this.airInit=false;this.angV=new V3();this.jumpDir=new V3(0,1,0);this.q=new THREE.Quaternion();this.prevQ=new THREE.Quaternion();this.qT=new THREE.Quaternion();this.tiltQ=new THREE.Quaternion();
   }
   place(x,z,yaw){this.pos.set(x,CAR_Y,z);this.vel.set(0,0,0);this.yaw=yaw;this.pitch=0;this.onGround=true;this.jumps=2;this.flipT=0;this.boost=MUT.infBoost?100:33;this.dead=0;this.mesh.visible=true;this.aerial=false;
-    this.surf=-1;this.tiltQ.identity();this.jumpHold=0;this.roll=0;this.rollRate=0;this.flipP=1;
+    this.surf=-1;this.tiltQ.identity();this.airInit=false;if(this.angV)this.angV.set(0,0,0);this.jumpHold=0;this.roll=0;this.rollRate=0;this.flipP=1;
     this.prevPos.copy(this.pos);this.rpos.copy(this.pos);this.prevYaw=this.ryaw=yaw;this.yawRate=this.pitchRate=0;this.lastVF=0;this.suspP=this.suspR=this.suspY=this.suspV=0;
     carQuat(this,this.q);this.prevQ.copy(this.q);this.qT.copy(this.q);this.trail.pts.length=0;}
-  fwd(t=_a){return t.set(Math.sin(this.yaw)*Math.cos(this.pitch),Math.sin(this.pitch),Math.cos(this.yaw)*Math.cos(this.pitch));}
+  fwd(t=_a){if(this.airInit&&!this.onGround&&this.surf<0)return t.set(0,0,1).applyQuaternion(this.airQ);return t.set(Math.sin(this.yaw)*Math.cos(this.pitch),Math.sin(this.pitch),Math.cos(this.yaw)*Math.cos(this.pitch));}
   destroy(){scene.remove(this.mesh);scene.remove(this.label);scene.remove(this.trail.mesh);}
 }
 function blankInput(){return{throttle:0,steer:0,airFwd:0,jump:false,jumpHeld:false,boost:false,drift:false};}
@@ -1414,8 +1421,14 @@ function surfPos(W,s,t,out){
   out.copy(W.n).multiplyScalar(d).addScaledVector(W.e,t);out.y=y;return out;
 }
 // full orientation (for rendering): surface frame on ramps/walls/ceiling, yaw/pitch (+ fading wall tilt) otherwise, plus flips
+function baseQuat(c,out){ // yaw/pitch + wall tilt + roll (used when leaving the ground)
+  _eu.set(-c.pitch,c.yaw,0);out.setFromEuler(_eu);
+  if(!c.onGround){out.premultiply(c.tiltQ);if(c.roll){_qb.setFromAxisAngle(ZAXIS,c.roll);out.multiply(_qb);}}
+  return out;
+}
 function carQuat(c,out){
-  if(c.surf>=0){
+  if(c.surf<0&&!c.onGround&&c.airInit){out.copy(c.airQ);}
+  else if(c.surf>=0){
     const W=WALLS[c.surf];surfFrame(W,c.s,_T,_N);
     _F.copy(_T).multiplyScalar(Math.sin(c.syaw)).addScaledVector(W.e,Math.cos(c.syaw)).normalize();
     _X.crossVectors(_N,_F).normalize();_m4.makeBasis(_X,_N,_F);out.setFromRotationMatrix(_m4);
@@ -1431,14 +1444,14 @@ function driveGround(c,inp,dt,V,yaw,canBoost){
   const fx=Math.sin(yaw),fz=Math.cos(yaw),rx=-fz,rz=fx;
   let vF=V.x*fx+V.z*fz,vR=V.x*rx+V.z*rz;
   const th=inp.throttle;
-  if(th>0){if(vF<0)vF=Math.min(vF+75*th*dt,27*th*dt);else if(vF<MAXD)vF=Math.min(MAXD,vF+27*th*dt);}   // brake through zero, so slopes can't pin the car
-  else if(th<0){if(vF>0)vF=Math.max(vF+75*th*dt,22*th*dt);else if(vF>-18)vF=Math.max(-18,vF+22*th*dt);}
-  else vF-=Math.sign(vF)*Math.min(Math.abs(vF),10*dt);
-  if(canBoost){vF=Math.min(MAXB*Math.max(1,MUT.boostPow*.85),vF+46*MUT.boostPow*dt);c.boost=MUT.infBoost?100:Math.max(0,c.boost-33*dt);c.boosting=true;}
-  if(vF>MAXD&&!c.boosting)vF=Math.max(MAXD,vF-14*dt);
+  const thr=canBoost?1:th;   // boosting always drives forward
+  if(thr>0){if(vF<0)vF=Math.min(vF+BRAKE*thr*dt,32*thr*dt);else vF+=throttleAcc(vF)*thr*dt;}   // brake through zero, so slopes can't pin the car
+  else if(thr<0){if(vF>0)vF=Math.max(vF+BRAKE*thr*dt,32*thr*dt);else vF+=throttleAcc(vF)*thr*dt;}
+  else vF-=Math.sign(vF)*Math.min(Math.abs(vF),COAST*dt);
+  if(canBoost){vF=Math.min(MAXB*Math.max(1,MUT.boostPow*.85),vF+AIR_BOOST*MUT.boostPow*dt);c.boost=MUT.infBoost?100:Math.max(0,c.boost-33.3*dt);c.boosting=true;}
   vR*=Math.exp(-(inp.drift?1.6:12)*dt);
   const sp=Math.abs(vF);
-  const turn=(inp.drift?3.8:2.8)*clamp(sp/5,0,1)*(1-.38*clamp(sp/MAXB,0,1));
+  const turn=turnRate(sp)*(inp.drift?1.4:1);
   const tRate=-inp.steer*turn*(vF<0?-1:1);
   c.yawRate+=(tRate-c.yawRate)*(1-Math.exp(-16*dt));
   yaw=wrapA(yaw+c.yawRate*dt);
@@ -1448,13 +1461,13 @@ function driveGround(c,inp,dt,V,yaw,canBoost){
   return yaw;
 }
 function enterSurf(c,i,s){
-  const W=WALLS[i];
+  const W=WALLS[i];c.angV.set(0,0,0);
   surfFrame(W,s,_T,_N);
   c.surf=i;c.s=s;c.t=c.pos.dot(W.e);
   c.sv.set(c.vel.dot(_T),0,c.vel.dot(W.e));
   c.fwd(_F);let fs=_F.dot(_T),ft=_F.dot(W.e);
   if(fs*fs+ft*ft<1e-3){fs=c.sv.x;ft=c.sv.z;}
-  c.syaw=Math.atan2(fs,ft);
+  c.syaw=Math.atan2(fs,ft);c.airInit=false;
   surfPos(W,c.s,c.t,c.pos);
 }
 function leaveSurf(c){
@@ -1506,7 +1519,8 @@ function updateSurf(c,inp,dt,canBoost){
   surfFrame(W,c.s,_T,_N);c.sv.x=c.vel.dot(_T);c.sv.z=c.vel.dot(W.e);
   const Ty=_T.y;
   c.syaw=driveGround(c,inp,dt,c.sv,c.syaw,canBoost);
-  c.sv.x+=.6*G*MUT.grav*Ty*dt;   // gravity along the surface (sticky tyres cancel part of it)
+  c.sv.x+=CAR_G*MUT.grav*Ty*dt;   // gravity along the surface
+  {const sl=Math.hypot(c.sv.x,c.sv.z);if(sl>MAXA){c.sv.x*=MAXA/sl;c.sv.z*=MAXA/sl;}}   // same top speed on walls as on the floor
   c.s+=c.sv.x*dt;c.t+=c.sv.z*dt;
   if(c.wrapCD>0)c.wrapCD-=dt;
   if(Math.abs(c.t)>W.span){
@@ -1559,7 +1573,7 @@ function updateSurf(c,inp,dt,canBoost){
       if(pen2>myPen+.05&&pen2<W2.rc){enterSurf(c,i,W2.rc*Math.asin(clamp(pen2/W2.rc,0,1)));carQuat(c,c.q);return;}}
   }
   const spd=Math.hypot(c.sv.x,c.sv.z);
-  if(inp.jump){c.vel.addScaledVector(_N,JUMP);leaveSurf(c);c.jumps=1;c.jumpHold=.24;if(c.human>=0)tone(300,.12,'sine',.08,1.8);}
+  if(inp.jump){c.vel.addScaledVector(_N,JUMP);c.jumpDir.copy(_N);leaveSurf(c);c.jumps=1;c.jumpHold=JUMP_HOLD_T;if(c.human>=0)tone(300,.12,'sine',.08,1.8);}
   else if((_N.y<.25&&spd<6)||(_N.y<-.5&&spd<10)){c.vel.addScaledVector(_N,2.5);leaveSurf(c);c.jumps=1;}  // too slow on a wall/ceiling: fall off
 }
 
@@ -1572,35 +1586,39 @@ function updateCar(c,inp,dt){
   }else if(c.onGround){
     c.yaw=driveGround(c,inp,dt,c.vel,c.yaw,canBoost);
     c.pitch*=Math.exp(-14*dt);
-    if(inp.jump){c.vel.y=JUMP;c.onGround=false;c.jumps=1;c.airT=0;c.jumpHold=.24;c.pos.y+=.02;c.tiltQ.identity();if(c.human>=0)tone(300,.12,'sine',.08,1.8);}
+    if(inp.jump){c.vel.y=JUMP;c.jumpDir.set(0,1,0);c.onGround=false;c.jumps=1;c.airT=0;c.jumpHold=JUMP_HOLD_T;c.pos.y+=.02;c.tiltQ.identity();c.airInit=false;if(c.human>=0)tone(300,.12,'sine',.08,1.8);}
   }else{
     c.airT+=dt;if(c.noLand>0)c.noLand-=dt;
     c.vel.y+=CAR_G*MUT.grav*dt;
-    if(c.jumpHold>0){c.jumpHold-=dt;if(inp.jumpHeld)c.vel.y+=24*dt;else c.jumpHold=0;}   // hold jump to go higher
-    c.tiltQ.slerp(QI,1-Math.exp(-3.5*dt));
+    if(c.jumpHold>0){c.jumpHold-=dt;if(inp.jumpHeld)c.vel.addScaledVector(c.jumpDir,JUMP_HOLD_ACC*dt);else c.jumpHold=0;}   // hold jump to go higher
+    if(!c.airInit){baseQuat(c,c.airQ);c.airInit=true;c.tiltQ.identity();c.roll=0;c.angV.set(0,0,0);}
     if(c.flipT<=0){
-      c.pitchRate+=(-inp.airFwd*2.7-c.pitchRate)*(1-Math.exp(-6.5*dt));
-      c.pitch=clamp(c.pitch+c.pitchRate*dt,-1.55,1.55);
-      // air roll: Q/E, or powerslide (Shift) + steer turns steering into roll
-      const rollIn=clamp((inp.roll||0)+(inp.drift?inp.steer:0),-1,1);
-      c.rollRate+=(rollIn*3.7-c.rollRate)*(1-Math.exp(-6.5*dt));
-      c.roll=wrapA(c.roll+c.rollRate*dt);
-      c.yawRate+=((inp.drift?0:-inp.steer*2.2)-c.yawRate)*(1-Math.exp(-6.5*dt));
-      c.yaw=wrapA(c.yaw+c.yawRate*dt);
-    }
-    if(inp.jump&&c.jumps>0&&c.airT<1.6){
+      // pitch (W/S), yaw (A/D), roll (Q/E, or powerslide + A/D): torque from input, damping when the stick is released
+      const iP=clamp(inp.airFwd,-1,1),iY=inp.drift?0:-clamp(inp.steer,-1,1),iR=clamp((inp.roll||0)+(inp.drift?inp.steer:0),-1,1),w=c.angV;
+      w.x+=(AIR_T.pitch*iP-AIR_D.pitch*w.x*(1-Math.abs(iP)))*dt;
+      w.y+=(AIR_T.yaw*iY-AIR_D.yaw*w.y*(1-Math.abs(iY)))*dt;
+      w.z+=(AIR_T.roll*iR-AIR_D.roll*w.z)*dt;
+      const wl=w.length();if(wl>AIR_MAXW)w.multiplyScalar(AIR_MAXW/wl);
+    }else c.angV.multiplyScalar(Math.exp(-6*dt));
+    const wl2=c.angV.length();
+    if(wl2>1e-5){_qb.setFromAxisAngle(_X.copy(c.angV).divideScalar(wl2),wl2*dt);c.airQ.multiply(_qb).normalize();}
+    _F.set(0,0,1).applyQuaternion(c.airQ);c.pitch=Math.asin(clamp(_F.y,-1,1));
+    if(Math.abs(_F.y)<.999)c.yaw=Math.atan2(_F.x,_F.z);
+    if(inp.throttle&&!canBoost)c.vel.addScaledVector(_F,AIR_THROTTLE*inp.throttle*dt);
+    if(inp.jump&&c.jumps>0&&c.airT<1.5){
       c.jumps=0;c.jumpHold=0;
       const dx=inp.rawFwd!==undefined?inp.rawFwd:inp.airFwd,dy=inp.rawSteer!==undefined?inp.rawSteer:inp.steer,L=Math.hypot(dx,dy);
       if(L>.3){
         const f=_a.set(Math.sin(c.yaw),0,Math.cos(c.yaw)),r=_b.set(-Math.cos(c.yaw),0,Math.sin(c.yaw));
-        const dir=_c.copy(f).multiplyScalar(dx/L).addScaledVector(r,dy/L);
-        c.vel.addScaledVector(dir,DODGE);c.vel.y=Math.max(c.vel.y*.3,4.2);
-        c.flipT=.55;c.flipP=0;c.flipX=dx/L;c.flipZ=dy/L;c.pitch=0;c.tiltQ.identity();
+        // forward/back flips push along the heading; side flips get stronger the faster you go
+        const vFw=c.vel.x*f.x+c.vel.z*f.z,side=Math.abs(dy/L)*DODGE*(1+.9*clamp(vFw/MAXB,0,1)),fw=(dx>0?1:1.066)*DODGE*dx/L;
+        const dir=_c.copy(f).multiplyScalar(fw).addScaledVector(r,Math.sign(dy)*side);
+        c.vel.add(dir);c.vel.y=Math.max(c.vel.y*.3,2.5);
+        c.flipT=.65;c.flipP=0;c.flipX=dx/L;c.flipZ=dy/L;c.angV.set(0,0,0);
         noise(.15,.14,500);
-      }else{c.vel.y=Math.max(c.vel.y,0)+8.5;if(c.human>=0)tone(380,.12,'sine',.08,1.6);}
+      }else{c.vel.addScaledVector(_X.set(0,1,0).applyQuaternion(c.airQ),JUMP);if(c.human>=0)tone(380,.12,'sine',.08,1.6);}
     }
-    c.bRamp=canBoost?Math.min(1,(c.bRamp||0)+dt*3.5):0;
-    if(canBoost){c.vel.addScaledVector(c.fwd(),AIR_BOOST*MUT.boostPow*(.4+.6*c.bRamp)*dt);c.boost=MUT.infBoost?100:Math.max(0,c.boost-33*dt);c.boosting=true;}
+    if(canBoost){c.vel.addScaledVector(c.fwd(),AIR_BOOST*MUT.boostPow*dt);c.boost=MUT.infBoost?100:Math.max(0,c.boost-33.3*dt);c.boosting=true;}
     if(c.flipT>0)c.flipT-=dt;
   }
   if(c.surf<0){
@@ -1609,7 +1627,8 @@ function updateCar(c,inp,dt){
     if(c.onGround){tryEnterFromFloor(c);}
     else if(!tryLandSurf(c)&&c.pos.y<=CAR_Y){
       c.pos.y=CAR_Y;
-      c.onGround=true;c.jumps=2;c.flipT=0;c.aerial=false;c.pitchRate=0;c.tiltQ.identity();c.suspV-=Math.min(8,Math.abs(c.vel.y))*.45;
+      if(c.airInit){_F.set(0,0,1).applyQuaternion(c.airQ);if(Math.hypot(_F.x,_F.z)<.15)_F.set(0,1,0).applyQuaternion(c.airQ).multiplyScalar(-Math.sign(_F.y)||1);if(Math.hypot(_F.x,_F.z)>1e-3)c.yaw=Math.atan2(_F.x,_F.z);}
+      c.onGround=true;c.jumps=2;c.flipT=0;c.aerial=false;c.pitchRate=0;c.pitch=0;c.tiltQ.identity();c.airInit=false;c.angV.set(0,0,0);c.suspV-=Math.min(8,Math.abs(c.vel.y))*.45;
       c.vel.y=0;
     }
     if(c.surf<0&&c.onGround){c.pos.y=CAR_Y;c.vel.y=0;}
@@ -1626,7 +1645,7 @@ function updateCar(c,inp,dt){
   c.suspV+=(-160*c.suspY-16*c.suspV)*dt;c.suspY=clamp(c.suspY+c.suspV*dt,-.18,.12);
   if(c.surf<0)arenaCar(c);
   if(c.onGround){c.roll=0;c.rollRate=0;}
-  if(c.flipP<1)c.flipP=Math.min(1,c.flipP+dt/(c.onGround?.14:.62));
+  if(c.flipP<1)c.flipP=Math.min(1,c.flipP+dt/(c.onGround?.14:.65));
   carQuat(c,c.q);
 }
 function arenaCar(c){
@@ -1658,7 +1677,7 @@ function updateBall(dt){
   const p=ball.pos,v=ball.vel,R=BALL_R,e=.62;
   v.y+=BALL_G*MUT.grav*dt;
   v.multiplyScalar(1-.03*dt);
-  const sp=v.length();if(sp>80)v.multiplyScalar(80/sp);
+  const sp=v.length();if(sp>100)v.multiplyScalar(100/sp);
   p.addScaledVector(v,dt);
   if(p.y<R){p.y=R;if(v.y<0){if(v.y<-4)hitSfx(-v.y*.3);v.y=-v.y*e;if(v.y<1.2)v.y=0;v.x*=.99;v.z*=.99;}}
   if(p.y<=R+.01){v.x*=1-.42*dt;v.z*=1-.42*dt;}
@@ -1818,9 +1837,9 @@ function assignRoles(){
 }
 
 // =============== input ===============
-const keys={};
+const keys={},tapped={};   // tapped = pressed since the last frame, so quick taps are never missed at low fps
 const BLOCK=new Set(['Space','ArrowUp','ArrowDown','ArrowLeft','ArrowRight','ShiftLeft','ShiftRight','Slash','Period','Enter','Quote']);
-addEventListener('keydown',e=>{if(e.target.tagName==='INPUT'&&e.target.type==='text')return;keys[e.code]=true;
+addEventListener('keydown',e=>{if(e.target.tagName==='INPUT'&&e.target.type==='text')return;keys[e.code]=true;if(!e.repeat)tapped[e.code]=true;
   if((BOUND.has(e.code)||BLOCK.has(e.code))&&match&&!match.demo&&!(e.target.closest&&e.target.closest('select,input')))e.preventDefault();
   if(e.code==='Escape'){if(!$('settings').classList.contains('hidden')){hideOverlay('settings');return;}if(performance.now()-lockLostAt<250)return;togglePause();}});
 addEventListener('keyup',e=>{keys[e.code]=false;});
@@ -1828,7 +1847,7 @@ addEventListener('keyup',e=>{keys[e.code]=false;});
 const inMatch=()=>match&&!match.demo&&state!=='end'&&$('menu').classList.contains('hidden')&&$('room').classList.contains('hidden')&&$('pause').classList.contains('hidden')&&$('settings').classList.contains('hidden');
 addEventListener('mousedown',e=>{
   if(!inMatch()||e.target.closest('button,select,input,.overlay'))return;
-  keys['Mouse'+e.button]=true;lockMouse();
+  keys['Mouse'+e.button]=true;tapped['Mouse'+e.button]=true;lockMouse();
 });
 addEventListener('mouseup',e=>{keys['Mouse'+e.button]=false;});
 addEventListener('contextmenu',e=>{if(inMatch())e.preventDefault();});
@@ -1843,7 +1862,7 @@ document.addEventListener('pointerlockchange',()=>{
 });
 const dzn=v=>Math.abs(v)<.18?0:v;
 function readHuman(h,dt=1/60){
-  const any=a=>a.some(k=>keys[k]);
+  const any=a=>a.some(k=>keys[k]||tapped[k]);
   const sets=match.humans.length===1?[CFG.binds.p1,CFG.binds.p2]:[CFG.binds[h.idx?'p2':'p1']];
   let th=0,st=0,jump=false,boost=false,drift=false,cam=false,roll=0;
   for(const s of sets){
@@ -2786,6 +2805,8 @@ function updateCams(dt){
     const k=1-Math.exp(-(5+CFG.camStiff*14)*dt);
     h.cam.position.lerp(_tp,k);h.look.lerp(_tl,1-Math.exp(-(8+CFG.camStiff*10)*dt));h.cam.lookAt(h.look);
     if(shakeAmt>0){h.cam.position.x+=rnd(-1,1)*shakeAmt*.6;h.cam.position.y+=rnd(-1,1)*shakeAmt*.6;}
+    // the camera glides toward its target, and that path can cut through a goal's corner: keep the real camera inside too
+    camInside(h.cam.position,Math.abs(h.car.rpos.z)>HL-1||Math.abs(h.cam.position.z)>HL);
     // speed-based FOV punch
     const target=CFG.fov+(h.car.boosting?6:0)+(match.humans.length>1?4:0);
     h.cam.fov+=(target-h.cam.fov)*Math.min(1,dt*4);
@@ -3621,9 +3642,10 @@ function frame(now){
   if(CFG.showFps){fpsN++;if(now-fpsT>500){$('fps').textContent=Math.round(fpsN*1000/(now-fpsT))+' FPS';fpsN=0;fpsT=now;}}
   // safety net: an unexpected error in one frame is logged, never freezes the game
   try{frameBody(now);}catch(e){if(frameErrors++<5)console.error('Sport League frame error:',e);}
+  for(const k in tapped)delete tapped[k];   // every mode (local, online, paused) has read its input by now
 }
 function frameBody(now){
-  const dt=Math.min(.05,(now-last)/1000);last=now;
+  const dt=Math.min(.1,(now-last)/1000);last=now;   // keeps real-time speed down to 10 fps (physics still runs in fixed 1/120 s steps)
   if(match.demo){updateShowroom(dt);render();return;}
   if(match.client){
     clientSendInput(dt);clientTick(dt);interpolate(1);updateCams(dt);updateVisuals(dt,now/1000);

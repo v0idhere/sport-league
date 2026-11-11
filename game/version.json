@@ -1,8 +1,13 @@
 {
-    "version":  "1.1.4",
+    "version":  "1.1.5",
     "date":  "2026-11-11",
     "notes":  [
-                  "Camera fixed: it no longer gets pulled toward the middle of the pitch"
+                  "New movement modelled on classic car-soccer physics: throttle, braking, turning, boost and gravity all retuned",
+                  "Full air control: backflips, barrel rolls and air roll in any direction",
+                  "Genre-standard jumps: small jump, higher when held, double jump and flips",
+                  "Quick taps of jump/boost are never missed, even at low frame rates",
+                  "Game keeps normal speed on slower PCs (no slow motion)",
+                  "Camera no longer clips through the goal walls"
               ],
     "files":  {
                   "assets/greenbug/license.txt":  "d9ba142abdb380468bfa22e5edb1e0990e037e3830401aca80c4480dda8fc4bd",
@@ -18,6 +23,6 @@
                   "assets/greenbug/textures/MatWheel_baseColor.png":  "8ac87f20b3db3e9978155d562cb8996d6a79f361b560a3c24bc0935184256121",
                   "assets/greenbug/textures/MatWheel_metallicRoughness.png":  "5e65b8ebb66cb3c852d96a611a2e74e744f08340c654a8890f4d0613c0e7d9f3",
                   "assets/greenbug/textures/MatWheel_normal.png":  "99dbaa2a23fcf881f648bb44e558e08066305156d9fd101e79fd1eac8ce9550e",
-                  "index.html":  "2f221371097f703a18a60a6a32345f612f8c5478c962d5201dbbb2fc571c66dd"
+                  "index.html":  "976792683fa43bcd234703e73f29251e453bde268d8cf1818dd1812423c2a3f2"
               }
 }
