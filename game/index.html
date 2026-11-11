@@ -357,7 +357,7 @@
 // =============== constants ===============
 const ARENA=(()=>{try{const a=sessionStorage.getItem('sl_arena');return a==='mid'||a==='big'?a:'std';}catch(e){return 'std';}})();
 // ---- version + in-game updates (new versions are published to GitHub; the launcher downloads them) ----
-const GAME_VERSION='1.1.1';
+const GAME_VERSION='1.1.2';
 const UPDATE_BASE='https://raw.githubusercontent.com/v0idhere/sport-league/main/game/';
 const needArena=n=>n>=3?'big':n===2?'mid':'std';
 const HW={std:54,mid:59,big:64}[ARENA], HL={std:82,mid:90,big:98}[ARENA], WH={std:31,mid:32,big:34}[ARENA], GW={std:13.5,mid:14.5,big:15.5}[ARENA], GH=11, GD=12;

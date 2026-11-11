@@ -1,10 +1,10 @@
 {
-    "version":  "1.1.1",
+    "version":  "1.1.2",
     "date":  "2026-11-11",
     "notes":  [
-                  "Sport League is now a real Windows app: its own game window, no browser",
-                  "Fixed \"localhost refused to connect\" when starting the game",
-                  "No more Microsoft Edge sign-in popups"
+                  "New download: a ZIP with the Sport League app folder (unzip, then run SportLeague.exe)",
+                  "Fixes Windows Defender wrongly flagging the game",
+                  "Real Windows app window, no browser"
               ],
     "files":  {
                   "assets/greenbug/license.txt":  "d9ba142abdb380468bfa22e5edb1e0990e037e3830401aca80c4480dda8fc4bd",
@@ -20,6 +20,6 @@
                   "assets/greenbug/textures/MatWheel_baseColor.png":  "8ac87f20b3db3e9978155d562cb8996d6a79f361b560a3c24bc0935184256121",
                   "assets/greenbug/textures/MatWheel_metallicRoughness.png":  "5e65b8ebb66cb3c852d96a611a2e74e744f08340c654a8890f4d0613c0e7d9f3",
                   "assets/greenbug/textures/MatWheel_normal.png":  "99dbaa2a23fcf881f648bb44e558e08066305156d9fd101e79fd1eac8ce9550e",
-                  "index.html":  "304b106c295e2a18308624522d74057b8a0e982e793a56a40413dca484eb9521"
+                  "index.html":  "424176368867646c685c3f53421f72729103627c8e7179fd7504bbdba52a2a27"
               }
 }
