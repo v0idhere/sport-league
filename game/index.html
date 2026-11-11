@@ -216,6 +216,7 @@
   #updCard ul{margin:10px 0 16px;padding-left:20px;line-height:1.7;color:#cfd8f5;text-align:left}
   #updCard .row{display:flex;gap:10px;justify-content:center}
   #updCard .umsg{min-height:20px;color:#9fb0e0;margin-bottom:10px}
+  #flipHint{position:fixed;left:50%;bottom:22%;transform:translateX(-50%);z-index:6;font:800 22px "Russo One",Inter,sans-serif;letter-spacing:.06em;color:#fff;background:rgba(8,12,28,.72);border:1px solid rgba(160,190,255,.35);border-radius:14px;padding:10px 22px;pointer-events:none;text-shadow:0 2px 8px rgba(0,0,0,.6)}
   .credit{position:absolute;right:18px;bottom:6px;font-family:Inter,system-ui,sans-serif;font-size:11px;color:#6c7aa8}
   @media (min-width:901px){
     .lpanel{left:auto;right:28px;top:92px;bottom:108px;width:min(540px,44vw);max-height:none;transform:translateX(40px)}
@@ -233,6 +234,7 @@
 <div id="var" class="hidden"><span class="rec"></span>REPLAY<small id="varSkip">Space to skip</small></div>
 <div id="wipe"><i></i><i></i><b>REPLAY</b></div>
 <div id="feed"></div>
+<div id="flipHint" class="hidden"></div>
 <div id="netBadge" class="hidden"></div>
 <div id="divider" class="hidden"></div>
 <div id="boostHud"></div>
@@ -357,7 +359,7 @@
 // =============== constants ===============
 const ARENA=(()=>{try{const a=sessionStorage.getItem('sl_arena');return a==='mid'||a==='big'?a:'std';}catch(e){return 'std';}})();
 // ---- version + in-game updates (new versions are published to GitHub; the launcher downloads them) ----
-const GAME_VERSION='1.3.0';
+const GAME_VERSION='1.3.2';
 const UPDATE_BASE='https://raw.githubusercontent.com/v0idhere/sport-league/main/game/';
 const needArena=n=>'std';   // one field for every team size
 const HW=82, HL=102.4, WH=40, GW=17.86, GH=12.84, GD=17.6;   // standard field 8192 x 10240, goal 1786 x 642 x 880 (scaled 1/50)
@@ -2980,7 +2982,7 @@ function step(dt){
 const menuCam=new THREE.PerspectiveCamera(50,1,.1,2000);
 menuCam.position.set(-110,55,0);const menuLook=new V3();
 let shakeAmt=0;function shake(a){if(CFG.shake)shakeAmt=Math.max(shakeAmt,a);}
-const CAMU=()=>BUG.L*CAR_SCALE/118,_cq=new THREE.Quaternion(),_cq2=new THREE.Quaternion();
+const _w1=new V3(),_w2=new V3(),_wq=new THREE.Quaternion(),_wq2=new THREE.Quaternion(),_cB=new V3(),CAMU=()=>BUG.L*CAR_SCALE/118,_cq=new THREE.Quaternion(),_cq2=new THREE.Quaternion();
 const vFov=(hfov,aspect)=>2*Math.atan(Math.tan(hfov*Math.PI/360)/Math.max(.2,aspect||16/9))*180/Math.PI;  // horizontal FOV setting -> camera's vertical FOV
 function camTargets(h,outPos,outLook,dt){
   const c=h.car;
@@ -3008,8 +3010,22 @@ function camTargets(h,outPos,outLook,dt){
   const upT=c.surf>=0?_N:UP;
   if(!h.cup)h.cup=new V3(0,1,0);
   // roll the view toward the new up direction (a rotation, so flipping from ceiling to floor never passes through a zero-length up)
-  if(!dt)h.cup.copy(upT);else{_cq.setFromUnitVectors(h.cup,upT);_cq2.identity().slerp(_cq,1-Math.exp(-4*dt));h.cup.applyQuaternion(_cq2).normalize();}
-  outPos.copy(cp).addScaledVector(h.dir,-dist).addScaledVector(h.cup,height);
+  if(!dt)h.cup.copy(upT);else{_cq.setFromUnitVectors(h.cup,upT);_cq2.identity().slerp(_cq,1-Math.exp(-8*dt));h.cup.applyQuaternion(_cq2).normalize();}
+  // 'behind the car' runs along the surface the car is on (on a wall, flat-ground 'behind' would point into the wall)
+  // on walls/ceiling, ball cam sits on the line from the ball through the car (so the car stays in view); otherwise the usual swivel
+  const onWall=h.cup.y<.9;
+  // on walls: car cam looks along the car, ball cam toward the ball (both measured along the wall); flat ground uses the swivel above
+  let want=_cB.copy(h.dir);
+  if(onWall){
+    if(c.surf>=0){surfFrame(WALLS[c.surf],c.s,_T,_N);_w1.copy(_T).multiplyScalar(Math.sin(c.syaw)).addScaledVector(WALLS[c.surf].e,Math.cos(c.syaw));}else _w1.set(Math.sin(c.yaw),0,Math.cos(c.yaw));
+    if(ballCam){want.copy(bp).sub(cp);want.addScaledVector(h.cup,-want.dot(h.cup));if(want.lengthSq()<1)want.copy(_w1);}else want.copy(_w1);
+  }
+  if(!h.bkS){h.bkS=new V3().copy(h.dir);}
+  h.bkS.lerp(want.normalize(),dt?1-Math.exp(-(onWall?6:14)*CFG.camTrans*dt):1);
+  const bk=_cB.copy(h.bkS).addScaledVector(h.cup,-h.bkS.dot(h.cup));
+  if(bk.lengthSq()<.04&&c.surf>=0){surfFrame(WALLS[c.surf],c.s,_T,_N);bk.copy(_T).multiplyScalar(Math.sin(c.syaw)).addScaledVector(WALLS[c.surf].e,Math.cos(c.syaw));}
+  if(bk.lengthSq()<1e-4)bk.copy(h.dir);bk.normalize();
+  outPos.copy(cp).addScaledVector(bk,-dist).addScaledVector(h.cup,height);
   outPos.x=clamp(outPos.x,-HW+1.2,HW-1.2);
   outPos.y=Math.max(1.2,Math.min(WH-1.2,outPos.y));
   camInside(outPos,Math.abs(cp.z)>HL-1);
@@ -3019,10 +3035,14 @@ function camTargets(h,outPos,outLook,dt){
     // highest tilt that still keeps the car inside the lower part of the frame
     const carElev=Math.atan2(cp.y-outPos.y,Math.hypot(cp.x-outPos.x,cp.z-outPos.z)||1);
     const halfV=(h.cam.fov||CFG.fov)*Math.PI/360;
-    const elev=clamp(Math.atan2(V,H),-.32,Math.min(.42,carElev+halfV*.78));
+    const elev=onWall?Math.atan2(V,H):clamp(Math.atan2(V,H),-.32,Math.min(.42,carElev+halfV*.78));
     outLook.set(outPos.x+vx/H*Math.cos(elev)*20,outPos.y+Math.sin(elev)*20,outPos.z+vz/H*Math.cos(elev)*20);
-  }else{outLook.copy(cp).addScaledVector(h.dir,10).addScaledVector(h.cup,1.7);}
+  }else{outLook.copy(cp).addScaledVector(onWall?h.bkS:h.dir,10).addScaledVector(h.cup,1.7);}
   if(CFG.camAngle)outLook.y+=Math.tan(CFG.camAngle*Math.PI/180)*outPos.distanceTo(outLook);
+  { // last step, for every mode and setting: if the view would lose the car, turn it toward the car until the car sits just inside the frame
+    const halfV=(h.cam.fov||70)*Math.PI/360,dB=_w1.copy(outLook).sub(outPos).normalize(),dC=_w2.copy(cp).sub(outPos).normalize(),ang=Math.acos(clamp(dB.dot(dC),-1,1)),maxA=halfV*.72;
+    if(ang>maxA){_wq.setFromUnitVectors(dC,dB);_wq2.identity().slerp(_wq,maxA/ang);dC.applyQuaternion(_wq2);outLook.copy(outPos).addScaledVector(dC,20);}
+  }
 }
 function camInside(p,carInGoal){
   if(carInGoal&&Math.abs(p.z)>HL-1){
@@ -3043,7 +3063,7 @@ function camInside(p,carInGoal){
   }
 }
 const _tp=new V3(),_tl=new V3();
-function snapCam(h){h.car.rpos.copy(h.car.pos);h.car.ryaw=h.car.yaw;ball.rpos.copy(ball.pos);camTargets(h,_tp,_tl,0);h.cam.position.copy(_tp);h.look.copy(_tl);h.cam.lookAt(h.look);}
+function snapCam(h){h.car.rpos.copy(h.car.pos);h.car.ryaw=h.car.yaw;ball.rpos.copy(ball.pos);camTargets(h,_tp,_tl,0);h.cam.position.copy(_tp);h.look.copy(_tl);h.cam.up.copy(h.cup||UP);h.cam.lookAt(h.look);}
 let renderAlpha=1;
 function interpolate(alpha){
   renderAlpha=clamp(alpha,0,1);
@@ -3064,6 +3084,7 @@ function updateCams(dt){
   }
   shakeAmt=Math.max(0,shakeAmt-dt*1.6);
   for(const h of match.humans){
+    if(state==='replayout'||state==='replay_done'||state==='replay'){h.cam.up.set(0,1,0);if(h.cup)h.cup.set(0,1,0);}   // replays are always upright (no leftover wall tilt)
     if(state==='replayout'||state==='replay_done'){
       _tp.set(h.cam.position.x*.6,WH-3,h.cam.position.z*.6);h.cam.position.lerp(_tp,1-Math.exp(-4*dt));h.look.lerp(_tl.set(0,0,0),1-Math.exp(-4*dt));h.cam.lookAt(h.look);continue;
     }
@@ -3075,9 +3096,11 @@ function updateCams(dt){
     camTargets(h,_tp,_tl,dt);
     const k=1-Math.exp(-(8+CFG.camStiff*26)*dt);
     h.cam.position.lerp(_tp,k);h.look.lerp(_tl,1-Math.exp(-(10+CFG.camStiff*16)*dt));
-    if(h.cup)h.cam.up.copy(h.cup);   // on walls and the ceiling the view rolls with the car; upright again in the air
+    if(h.cup)h.cam.up.copy(h.cup);   // the view rolls with walls and the ceiling (smoothly), upright again in the air
     h.cam.lookAt(h.look);
     if(shakeAmt>0){h.cam.position.x+=rnd(-1,1)*shakeAmt*.6;h.cam.position.y+=rnd(-1,1)*shakeAmt*.6;}
+    // on its roof: tell the player how to get back on the wheels
+    if(h.idx===0){const show=h.car.turtle&&h.car.turtleT>.25&&state==='play';const el=$('flipHint');if(show!==!el.classList.contains('hidden')){el.classList.toggle('hidden',!show);if(show)el.textContent='Upside down: press '+keyLabel(CFG.binds.p1.jump[0])+' (JUMP) to flip back';}}
     // the camera glides toward its target, and that path can cut through a goal's corner: keep the real camera inside too
     camInside(h.cam.position,Math.abs(h.car.rpos.z)>HL-1||Math.abs(h.cam.position.z)>HL);
     // field of view is horizontal (like the genre's settings), so every screen shape sees the same width; no zoom while boosting
@@ -3436,6 +3459,8 @@ function renderSettings(){
       ctl.oninput=()=>{CFG[f.k]=+ctl.value;show();settingChanged(f,true);};wrap.append(ctl,val);row.appendChild(wrap);body.appendChild(row);continue;}
     row.appendChild(ctl);body.appendChild(row);
   }
+  if(setTab==='camera'){const b=document.createElement('button');b.className='btn';b.id='camReset';b.textContent='Reset camera to default';b.style.marginTop='12px';
+    b.onclick=()=>{Object.assign(CFG,{fov:110,camDist:270,camHeight:100,camAngle:-3,camStiff:.45,camSwivel:2.5,camTrans:1.2,ballCamDefault:true,shake:true});saveCfg();renderSettings();};body.appendChild(b);}
 }
 let qTimer=0;
 function settingChanged(f,live){
@@ -3450,7 +3475,7 @@ function renderControls(body){
   const top=document.createElement('div');top.className='ctop';
   for(const p of['p1','p2']){const b=document.createElement('button');b.className='btn'+(setPlayer===p?' primary':'');b.textContent=p==='p1'?'Player 1':'Player 2';b.onclick=()=>{setPlayer=p;rebind=null;renderSettings();};top.appendChild(b);}
   const mk=(txt,fn)=>{const b=document.createElement('button');b.className='btn';b.textContent=txt;b.onclick=fn;top.appendChild(b);};
-  if(setPlayer==='p1'){mk('Legacy preset',()=>{CFG.binds.p1=cloneB(PRESETS.legacy);bindsChanged();});mk('Simple preset',()=>{CFG.binds.p1=cloneB(PRESETS.simple);bindsChanged();});}
+  if(setPlayer==='p1'){mk('Reset to default',()=>{CFG.binds.p1=cloneB(PRESETS.legacy);CFG.binds.p2=cloneB(PRESETS.p2);bindsChanged();});mk('Legacy preset',()=>{CFG.binds.p1=cloneB(PRESETS.legacy);bindsChanged();});mk('Simple preset',()=>{CFG.binds.p1=cloneB(PRESETS.simple);bindsChanged();});}
   else mk('Reset Player 2',()=>{CFG.binds.p2=cloneB(PRESETS.p2);bindsChanged();});
   body.appendChild(top);
   const hint=document.createElement('div');hint.className='netstatus';hint.textContent='Click a slot, then press a key or mouse button. Esc cancels · Backspace clears the slot.';body.appendChild(hint);

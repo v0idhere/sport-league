@@ -1,15 +1,12 @@
 {
-    "version":  "1.3.0",
+    "version":  "1.3.2",
     "date":  "2026-11-11",
     "notes":  [
-                  "New field built to the standard car-soccer layout: bigger pitch, cut corners, standard goals, the 34-pad boost layout and standard kickoff spots",
-                  "Standard car and ball proportions with a box hitbox and genre-style ball hits",
-                  "Much smarter bots: they predict the ball, time their hits, flip into shots, save, rotate and grab boost",
-                  "Night stadium: starry sky, floodlights, glowing boost and lights (Day still in Settings \u003e Video)",
-                  "Cars can land on their roof and stay flipped: press jump to roll back onto your wheels",
-                  "Smoother car animation: no more sudden snaps on landings, corners and wall changes",
-                  "Camera uses the standard settings and rolls with you on walls",
-                  "All new sounds: engine, boost roar, heavy ball hits, jumps, flips, pickups, goal explosion, horn and crowd cheer"
+                  "Camera on walls and ramps: sits behind your car and rolls smoothly with the surface (no more half-tilted view)",
+                  "Your car always stays on screen, with every camera setting",
+                  "Replays are always upright (no leftover tilt from a wall)",
+                  "New Reset camera to default and Reset to default (controls) buttons in Settings",
+                  "Upside-down hint shows which key flips your car back"
               ],
     "files":  {
                   "assets/greenbug/license.txt":  "d9ba142abdb380468bfa22e5edb1e0990e037e3830401aca80c4480dda8fc4bd",
@@ -25,6 +22,6 @@
                   "assets/greenbug/textures/MatWheel_baseColor.png":  "8ac87f20b3db3e9978155d562cb8996d6a79f361b560a3c24bc0935184256121",
                   "assets/greenbug/textures/MatWheel_metallicRoughness.png":  "5e65b8ebb66cb3c852d96a611a2e74e744f08340c654a8890f4d0613c0e7d9f3",
                   "assets/greenbug/textures/MatWheel_normal.png":  "99dbaa2a23fcf881f648bb44e558e08066305156d9fd101e79fd1eac8ce9550e",
-                  "index.html":  "7999468891cae995903b811b587c4f6477af979d5eee60db352136d157bf1327"
+                  "index.html":  "dc97c67eed87871fe55efcddfae0127c82553272cfb114388d1b41ed354977b5"
               }
 }
