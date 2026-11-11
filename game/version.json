@@ -1,10 +1,8 @@
 {
-    "version":  "1.1.3",
+    "version":  "1.1.4",
     "date":  "2026-11-11",
     "notes":  [
-                  "Download is a single SportLeague.exe again: it installs the game and adds Start menu and desktop shortcuts",
-                  "Uninstall from Windows Settings \u003e Apps",
-                  "Fixes Windows Defender wrongly flagging the game"
+                  "Camera fixed: it no longer gets pulled toward the middle of the pitch"
               ],
     "files":  {
                   "assets/greenbug/license.txt":  "d9ba142abdb380468bfa22e5edb1e0990e037e3830401aca80c4480dda8fc4bd",
@@ -20,6 +18,6 @@
                   "assets/greenbug/textures/MatWheel_baseColor.png":  "8ac87f20b3db3e9978155d562cb8996d6a79f361b560a3c24bc0935184256121",
                   "assets/greenbug/textures/MatWheel_metallicRoughness.png":  "5e65b8ebb66cb3c852d96a611a2e74e744f08340c654a8890f4d0613c0e7d9f3",
                   "assets/greenbug/textures/MatWheel_normal.png":  "99dbaa2a23fcf881f648bb44e558e08066305156d9fd101e79fd1eac8ce9550e",
-                  "index.html":  "55d85cb17aad537987bc38fce0391ae13e48d75ce69d6fb2b903a6c98892a3f5"
+                  "index.html":  "2f221371097f703a18a60a6a32345f612f8c5478c962d5201dbbb2fc571c66dd"
               }
 }
