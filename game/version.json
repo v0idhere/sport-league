@@ -1,11 +1,10 @@
 {
-    "version":  "1.1.0",
+    "version":  "1.1.1",
     "date":  "2026-11-11",
     "notes":  [
-                  "Curved edges inside the goals: drive up the goal walls, across the roof and around",
-                  "Smoother, calmer flying and jumping (boost builds up, softer air control)",
-                  "No more getting stuck in the corners or at the walls next to the goals",
-                  "Update button in the lobby: get new versions without downloading again"
+                  "Sport League is now a real Windows app: its own game window, no browser",
+                  "Fixed \"localhost refused to connect\" when starting the game",
+                  "No more Microsoft Edge sign-in popups"
               ],
     "files":  {
                   "assets/greenbug/license.txt":  "d9ba142abdb380468bfa22e5edb1e0990e037e3830401aca80c4480dda8fc4bd",
@@ -21,6 +20,6 @@
                   "assets/greenbug/textures/MatWheel_baseColor.png":  "8ac87f20b3db3e9978155d562cb8996d6a79f361b560a3c24bc0935184256121",
                   "assets/greenbug/textures/MatWheel_metallicRoughness.png":  "5e65b8ebb66cb3c852d96a611a2e74e744f08340c654a8890f4d0613c0e7d9f3",
                   "assets/greenbug/textures/MatWheel_normal.png":  "99dbaa2a23fcf881f648bb44e558e08066305156d9fd101e79fd1eac8ce9550e",
-                  "index.html":  "fc5fc5253c3f32d3cbc40a2e0113f9c23574ca7fd88a82313028fcb54ac17117"
+                  "index.html":  "304b106c295e2a18308624522d74057b8a0e982e793a56a40413dca484eb9521"
               }
 }
