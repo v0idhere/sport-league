@@ -1,13 +1,15 @@
 {
-    "version":  "1.1.5",
+    "version":  "1.3.0",
     "date":  "2026-11-11",
     "notes":  [
-                  "New movement modelled on classic car-soccer physics: throttle, braking, turning, boost and gravity all retuned",
-                  "Full air control: backflips, barrel rolls and air roll in any direction",
-                  "Genre-standard jumps: small jump, higher when held, double jump and flips",
-                  "Quick taps of jump/boost are never missed, even at low frame rates",
-                  "Game keeps normal speed on slower PCs (no slow motion)",
-                  "Camera no longer clips through the goal walls"
+                  "New field built to the standard car-soccer layout: bigger pitch, cut corners, standard goals, the 34-pad boost layout and standard kickoff spots",
+                  "Standard car and ball proportions with a box hitbox and genre-style ball hits",
+                  "Much smarter bots: they predict the ball, time their hits, flip into shots, save, rotate and grab boost",
+                  "Night stadium: starry sky, floodlights, glowing boost and lights (Day still in Settings \u003e Video)",
+                  "Cars can land on their roof and stay flipped: press jump to roll back onto your wheels",
+                  "Smoother car animation: no more sudden snaps on landings, corners and wall changes",
+                  "Camera uses the standard settings and rolls with you on walls",
+                  "All new sounds: engine, boost roar, heavy ball hits, jumps, flips, pickups, goal explosion, horn and crowd cheer"
               ],
     "files":  {
                   "assets/greenbug/license.txt":  "d9ba142abdb380468bfa22e5edb1e0990e037e3830401aca80c4480dda8fc4bd",
@@ -23,6 +25,6 @@
                   "assets/greenbug/textures/MatWheel_baseColor.png":  "8ac87f20b3db3e9978155d562cb8996d6a79f361b560a3c24bc0935184256121",
                   "assets/greenbug/textures/MatWheel_metallicRoughness.png":  "5e65b8ebb66cb3c852d96a611a2e74e744f08340c654a8890f4d0613c0e7d9f3",
                   "assets/greenbug/textures/MatWheel_normal.png":  "99dbaa2a23fcf881f648bb44e558e08066305156d9fd101e79fd1eac8ce9550e",
-                  "index.html":  "976792683fa43bcd234703e73f29251e453bde268d8cf1818dd1812423c2a3f2"
+                  "index.html":  "7999468891cae995903b811b587c4f6477af979d5eee60db352136d157bf1327"
               }
 }
