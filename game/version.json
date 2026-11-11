@@ -1,0 +1,26 @@
+{
+    "version":  "1.1.0",
+    "date":  "2026-11-11",
+    "notes":  [
+                  "Curved edges inside the goals: drive up the goal walls, across the roof and around",
+                  "Smoother, calmer flying and jumping (boost builds up, softer air control)",
+                  "No more getting stuck in the corners or at the walls next to the goals",
+                  "Update button in the lobby: get new versions without downloading again"
+              ],
+    "files":  {
+                  "assets/greenbug/license.txt":  "d9ba142abdb380468bfa22e5edb1e0990e037e3830401aca80c4480dda8fc4bd",
+                  "assets/greenbug/scene.bin":  "7267bbf9f7d301922508a7386198217199d4fd47774452574adb8e1ef8b88457",
+                  "assets/greenbug/scene.gltf":  "e24318de0bbf965794c0146b120802fbc6b3c6a5b8585ea1e40a515d3c7ae9e9",
+                  "assets/greenbug/textures/MatMain_baseColor.png":  "d963d59f5c406c1e8c9ac30cd86dcdf257d45d7cb50093fa11d82b18fb5e3986",
+                  "assets/greenbug/textures/MatMain_emissive.png":  "bb9e75cecd27d1801c895428ace8923f30fab1b65a0c9bc7db2e7118a8f94704",
+                  "assets/greenbug/textures/MatMain_metallicRoughness.png":  "76d8883fbca289f79f3fe4d9e960625c484903840f821b38685a31803840fa57",
+                  "assets/greenbug/textures/MatMain_normal.png":  "fdd94f0453b9d0e5dc4d86d625b8ad572c070613be1eec6a3f7ad4e719d25bd7",
+                  "assets/greenbug/textures/MatSec_baseColor.png":  "98d4309dbf93a27d50f35f2fe1db7b9837f40244e96e67f59b288c13f34cab7a",
+                  "assets/greenbug/textures/MatSec_emissive.png":  "6049067b653030ef3e708ff1fe3188c51151bb85954d74803628895a1be0d974",
+                  "assets/greenbug/textures/MatSec_metallicRoughness.png":  "77e766836b1a80f31eabb36b70a6fbdb2df55d78a7b2a698305b81342b606271",
+                  "assets/greenbug/textures/MatWheel_baseColor.png":  "8ac87f20b3db3e9978155d562cb8996d6a79f361b560a3c24bc0935184256121",
+                  "assets/greenbug/textures/MatWheel_metallicRoughness.png":  "5e65b8ebb66cb3c852d96a611a2e74e744f08340c654a8890f4d0613c0e7d9f3",
+                  "assets/greenbug/textures/MatWheel_normal.png":  "99dbaa2a23fcf881f648bb44e558e08066305156d9fd101e79fd1eac8ce9550e",
+                  "index.html":  "fc5fc5253c3f32d3cbc40a2e0113f9c23574ca7fd88a82313028fcb54ac17117"
+              }
+}

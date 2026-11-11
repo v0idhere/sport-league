@@ -1,0 +1,151 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Sport League</title>
+<meta name="description" content="Sport League: fast 3D car soccer. Boost, fly, drive on walls and score. Play 1v1 to 4v4 online with real players.">
+<link rel="icon" type="image/png" href="media/icon.png">
+<meta property="og:title" content="Sport League">
+<meta property="og:description" content="Fast 3D car soccer. Free download for Windows.">
+<meta property="og:image" content="media/cover.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800;900&display=swap" rel="stylesheet">
+<style>
+  :root{--bg:#070b16;--panel:rgba(14,20,38,.72);--line:rgba(140,170,255,.18);--text:#eef3ff;--dim:#9fb0e0;--blue:#2f7bff;--orange:#ff7a1a;--cyan:#5fe8ff;--mint:#7dffb0}
+  *{box-sizing:border-box;margin:0;padding:0}
+  html{scroll-behavior:smooth}
+  body{background:var(--bg);color:var(--text);font-family:Inter,system-ui,sans-serif;overflow-x:hidden}
+  a{color:inherit}
+
+  /* hero with gameplay video behind it */
+  .hero{position:relative;min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:90px 16px 60px;overflow:hidden}
+  .hero video{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;z-index:-2;filter:saturate(1.1)}
+  .hero::before{content:"";position:absolute;inset:0;z-index:-1;
+    background:radial-gradient(ellipse at center,rgba(7,11,22,.25) 0%,rgba(7,11,22,.7) 70%),linear-gradient(180deg,rgba(7,11,22,.55) 0%,rgba(7,11,22,0) 30%,rgba(7,11,22,0) 65%,var(--bg) 100%)}
+  nav{position:absolute;top:0;left:0;right:0;display:flex;align-items:center;justify-content:space-between;padding:18px clamp(16px,4vw,48px)}
+  nav .brand{display:flex;align-items:center;gap:10px;font-weight:900;letter-spacing:.12em;font-size:14px;text-decoration:none}
+  nav .brand img{width:34px;height:34px;border-radius:9px}
+  nav .links{display:flex;gap:22px;font-size:14px;font-weight:600;color:var(--dim)}
+  nav .links a{text-decoration:none}nav .links a:hover{color:var(--text)}
+  .logo{width:clamp(96px,14vw,148px);height:auto;border-radius:28px;box-shadow:0 0 60px rgba(95,232,255,.35),0 20px 50px rgba(0,0,0,.5);animation:float 5s ease-in-out infinite}
+  @keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-10px)}}
+  h1{margin-top:22px;font-size:clamp(44px,9vw,112px);font-weight:900;letter-spacing:.04em;line-height:.95;
+    background:linear-gradient(90deg,var(--blue),#fff 45%,#fff 55%,var(--orange));-webkit-background-clip:text;background-clip:text;color:transparent;text-shadow:0 8px 40px rgba(0,0,0,.35)}
+  .tag{margin-top:16px;font-size:clamp(16px,2.2vw,21px);color:#d6e0ff;max-width:640px;line-height:1.5}
+  .ctas{margin-top:34px;display:flex;gap:14px;flex-wrap:wrap;justify-content:center}
+  .btn{display:inline-flex;align-items:center;gap:12px;text-decoration:none;font-weight:800;letter-spacing:.06em;border-radius:16px;padding:18px 30px;font-size:17px;transition:transform .15s,box-shadow .15s}
+  .btn:hover{transform:translateY(-2px)}
+  .btn.dl{color:#06121e;background:linear-gradient(90deg,var(--cyan),var(--mint));box-shadow:0 0 30px rgba(95,232,255,.5)}
+  .btn.dl:hover{box-shadow:0 0 46px rgba(95,232,255,.8)}
+  .btn.dl small{display:block;font-size:12px;font-weight:600;letter-spacing:.02em;opacity:.75;text-align:left}
+  .btn.ghost{color:var(--text);background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.25);backdrop-filter:blur(8px)}
+  .btn svg{width:24px;height:24px;flex:none}
+  .meta{margin-top:16px;font-size:13px;color:var(--dim)}
+  .scroll{position:absolute;bottom:22px;left:50%;transform:translateX(-50%);color:var(--dim);font-size:12px;letter-spacing:.2em;text-decoration:none}
+
+  section{padding:90px clamp(16px,5vw,64px);max-width:1180px;margin:0 auto}
+  h2{font-size:clamp(28px,4vw,42px);font-weight:900;letter-spacing:.03em;text-align:center}
+  .sub{text-align:center;color:var(--dim);margin-top:10px}
+  .grid{margin-top:44px;display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:18px}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:20px;padding:26px}
+  .card .ic{width:46px;height:46px;border-radius:12px;display:grid;place-items:center;margin-bottom:16px;background:linear-gradient(135deg,rgba(47,123,255,.35),rgba(255,122,26,.3))}
+  .card .ic svg{width:24px;height:24px;stroke:#fff;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+  .card h3{font-size:18px;margin-bottom:8px}
+  .card p{color:var(--dim);line-height:1.55;font-size:15px}
+  .shot{margin-top:44px;border-radius:22px;overflow:hidden;border:1px solid var(--line);box-shadow:0 30px 80px rgba(0,0,0,.5)}
+  .shot img{display:block;width:100%;height:auto}
+  .keys{margin-top:40px;display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:10px}
+  .key{display:flex;justify-content:space-between;align-items:center;background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:12px 16px;font-size:14px;color:var(--dim)}
+  .key b{color:var(--text);font-size:13px;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.18);border-radius:7px;padding:4px 9px}
+  .final{text-align:center}
+  .final .btn{margin-top:28px}
+  footer{border-top:1px solid var(--line);padding:30px 16px 40px;text-align:center;color:#6c7aa8;font-size:13px;line-height:1.8}
+  footer a{color:#8fa2d8}
+  @media (max-width:640px){nav .links{display:none}.btn{width:100%;justify-content:center}}
+  @media (prefers-reduced-motion:reduce){.logo{animation:none}}
+</style>
+</head>
+<body>
+
+<header class="hero">
+  <video autoplay muted loop playsinline poster="media/cover.png">
+    <source src="media/bg.webm" type="video/webm">
+  </video>
+  <nav>
+    <a class="brand" href="#"><img src="media/icon.png" alt="">SPORT LEAGUE</a>
+    <div class="links"><a href="#features">Features</a><a href="#controls">Controls</a><a href="game/">Play in browser</a></div>
+  </nav>
+  <img class="logo" src="media/icon.png" alt="Sport League icon">
+  <h1>SPORT LEAGUE</h1>
+  <p class="tag">Fast 3D car soccer. Boost, fly, drive up the walls and smash the ball into the net — 1v1 up to 4v4 against real players around the world.</p>
+  <div class="ctas">
+    <a class="btn dl" id="dl" href="https://github.com/v0idhere/sport-league/releases/latest/download/SportLeague.exe">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12"/><path d="m7 10 5 5 5-5"/><path d="M5 21h14"/></svg>
+      <span>DOWNLOAD FOR WINDOWS<small id="dlv">Free · auto-updates in game</small></span>
+    </a>
+    <a class="btn ghost" href="game/">
+      <svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
+      PLAY IN BROWSER
+    </a>
+  </div>
+  <p class="meta">Windows 10/11 · uses Microsoft Edge to run · no install needed</p>
+  <a class="scroll" href="#features">SCROLL ↓</a>
+</header>
+
+<section id="features">
+  <h2>BUILT FOR SPEED</h2>
+  <p class="sub">Everything you need for a quick match — or a long night of ranked chaos.</p>
+  <div class="grid">
+    <div class="card"><div class="ic"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18"/></svg></div>
+      <h3>Play online worldwide</h3><p>Find a match with real players, or make a private room and send the code to your friends anywhere.</p></div>
+    <div class="card"><div class="ic"><svg viewBox="0 0 24 24"><path d="M4 18c3-9 13-9 16 0"/><path d="M12 6v3"/></svg></div>
+      <h3>Walls, ceiling, goals</h3><p>Curved ramps everywhere — drive up the walls, across the ceiling and even around the inside of the goal.</p></div>
+    <div class="card"><div class="ic"><svg viewBox="0 0 24 24"><path d="M13 2 4 14h7l-1 8 9-12h-7z"/></svg></div>
+      <h3>Boost &amp; aerials</h3><p>Jump, double jump, flip and fly with smooth air control. Pick your boost colour and show off.</p></div>
+    <div class="card"><div class="ic"><svg viewBox="0 0 24 24"><rect x="3" y="8" width="18" height="8" rx="3"/><circle cx="7.5" cy="17" r="2"/><circle cx="16.5" cy="17" r="2"/></svg></div>
+      <h3>Garage &amp; quests</h3><p>Cars, paints, finishes, wheels and flags. Finish easy quests to unlock more.</p></div>
+    <div class="card"><div class="ic"><svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="m10 9 5 3-5 3z"/></svg></div>
+      <h3>Goal replays</h3><p>Every goal gets a slow-motion replay. Everyone votes to skip it.</p></div>
+    <div class="card"><div class="ic"><svg viewBox="0 0 24 24"><path d="M21 12a9 9 0 1 1-3-6.7"/><path d="M21 4v5h-5"/></svg></div>
+      <h3>Updates in game</h3><p>New version out? Press <b>UPDATE</b> in the lobby and the game updates itself.</p></div>
+  </div>
+  <div class="shot"><img src="media/cover.png" alt="Sport League screenshot" loading="lazy"></div>
+</section>
+
+<section id="controls">
+  <h2>CONTROLS</h2>
+  <p class="sub">Rebind anything in Settings. Two players can share one keyboard in split-screen.</p>
+  <div class="keys">
+    <div class="key">Drive<b>W A S D</b></div>
+    <div class="key">Jump / flip<b>Right click</b></div>
+    <div class="key">Boost<b>Left click</b></div>
+    <div class="key">Powerslide<b>Left Shift</b></div>
+    <div class="key">Air roll<b>Q / E</b></div>
+    <div class="key">Ball cam<b>Space</b></div>
+  </div>
+</section>
+
+<section class="final">
+  <h2>READY TO PLAY?</h2>
+  <a class="btn dl" href="https://github.com/v0idhere/sport-league/releases/latest/download/SportLeague.exe">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12"/><path d="m7 10 5 5 5-5"/><path d="M5 21h14"/></svg>
+    DOWNLOAD SPORT LEAGUE
+  </a>
+</section>
+
+<footer>
+  Sport League <span id="ver"></span><br>
+  Car model “<a href="https://sketchfab.com/3d-models/green-bug-stylized-scifi-car-free-34f1a7734d474b34a8291f613a581ccb">Green Bug Stylized Scifi Car Free</a>” by <a href="https://sketchfab.com/ferofluid">ferofluid</a>, licensed under <a href="https://creativecommons.org/licenses/by/4.0/">CC BY 4.0</a>.
+</footer>
+
+<script>
+  // show the current version from the game's update manifest
+  fetch('game/version.json',{cache:'no-store'}).then(r=>r.ok?r.json():null).then(j=>{
+    if(!j||!j.version)return;
+    document.getElementById('ver').textContent='v'+j.version;
+    document.getElementById('dlv').textContent='Free · v'+j.version+' · auto-updates in game';
+  }).catch(()=>{});
+</script>
+</body>
+</html>
